@@ -2,57 +2,45 @@ package poly.edu.java6.infrastructure.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // Bỏ cấu hình mặc định CSRF và CORS
-        http.csrf(config -> config.disable()).cors(config -> config.disable());
-        // Phân quyền sử dụng
-        http.authorizeHttpRequests(config -> {
-            config
-                    .requestMatchers("/poly/**").authenticated()
-                    .anyRequest().permitAll();
-        });
-        // Form đăng nhập
-        http.formLogin(config -> {
-            config.loginPage("/auth");
-            config.loginProcessingUrl("/login/check");
-            config.defaultSuccessUrl("/login/success");
-            config.failureUrl("/login/failure");
-            config.permitAll();
-            config.usernameParameter("username");
-            config.passwordParameter("password");
-        });
-        // Ghi nhớ tài khoản
-        http.rememberMe(config -> {
-            config.tokenValiditySeconds(3*24*60*60);
-            config.rememberMeCookieName("remember-me");
-            config.rememberMeParameter("remember-me");
-        });
-        // Đăng xuất
-        http.logout(config -> {
-            config.logoutUrl("/logout");
-            config.logoutSuccessUrl("/login/exit");
-            config.clearAuthentication(true);
-            config.invalidateHttpSession(true);
-            config.deleteCookies("remember-me");
-        });
-        // Đăng xuất
-        http.logout(Customizer.withDefaults());
+        http
+                .csrf(config -> config.disable())
+                .cors(cors -> cors.configurationSource(request -> {
+                    CorsConfiguration config = new CorsConfiguration();
+                    config.setAllowedOrigins(List.of("http://localhost:5173"));
+                    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    config.setAllowedHeaders(List.of("*"));
+                    config.setAllowCredentials(true);
+                    return config;
+                }))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/auth/login"
+                                ,"/api/auth/logup")
+                        .permitAll()
+                        .anyRequest().authenticated());
+
         return http.build();
     }
 }

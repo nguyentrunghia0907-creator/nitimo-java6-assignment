@@ -1,4 +1,4 @@
-package poly.edu.java6.core;
+package poly.edu.java6.model;
 
 import jakarta.persistence.*;
 

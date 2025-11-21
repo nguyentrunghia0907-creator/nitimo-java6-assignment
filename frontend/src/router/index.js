@@ -21,12 +21,14 @@ const routes = [
     {
         path: '/checkout',
         name: 'Checkout',
-        component: CheckOut
+        component: CheckOut,
+        meta: { requiresAuth: true }
     },
     {
         path: '/account',
         name: 'Account',
-        component: Account
+        component: Account,
+        meta: { requiresAuth: true }
     },
     {
         path: '/auth',
@@ -48,3 +50,19 @@ const router = createRouter({
 });
 
 export default router;
+
+const isAuthenticated = () => {
+    return localStorage.getItem('jwt_token') !== null;
+};
+
+router.beforeEach((to, from, next) => {
+    if (to.meta.requiresAuth) {
+        if (!isAuthenticated()) {
+            next('/auth');
+        } else {
+            next();
+        }
+    } else {
+        next();
+    }
+});
